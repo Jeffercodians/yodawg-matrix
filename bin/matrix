@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+
+set -ueo pipefail
+
+# @cmd
+status() {
+	include "<docker>"
+
+	docker::compose ps
+}
+
+# @cmd
+up() {
+	include "<docker>"
+
+	docker::network::create
+
+	generate_config
+
+	docker::compose up -d	
+
+	register_ingress
+}
+
+# @cmd
+down() {
+	unregister_ingress
+
+	service::down
+}
+
+# @cmd
+# @arg args~
+run() {
+	include "<docker>"
+
+	docker::compose run synapse "${argc_args[@]}"
+}
+
+# @cmd
+register_ingress() {
+	yo http add_service "matrix" "127.0.0.1:${SERVICE_PORT_MATRIX}"
+	yo http add_service "chat" "127.0.0.1:${SERVICE_PORT_HTTP}"
+	yo http reload
+}
+
+# @cmd
+unregister_ingress() {
+	yo http remove_service "matrix"
+	yo http remove_service "chat"
+	yo http reload
+}
+
+# @cmd
+generate_config() {
+	mkdir -p "${SERVICE_ENV_CONF}/element" \
+		"${SERVICE_ENV_CONF}/synapse"
+
+	envsubst < "${SERVICE_CONF}/element.json" > "${SERVICE_ENV_CONF}/element/config.json"
+	envsubst < "${SERVICE_CONF}/synapse.yaml" > "${SERVICE_ENV_CONF}/synapse/homeserver.yaml"
+	touch "${SERVICE_LOG}/synapse.log"
+
+	chown -R 991:991 "${SERVICE_ENV_CONF}/synapse" \
+		"${SERVICE_DATA}/synapse" \
+		"${SERVICE_LOG}/synapse.log"
+
+	"${0}" run generate
+}
+
+# @cmd
+# @arg args~
+logs() {
+	include "<docker>"
+
+	docker::compose logs "${argc_args[@]}"
+}
+
+eval "$(argc --argc-eval "${0}" "${@}")"

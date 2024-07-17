@@ -1,0 +1,33 @@
+services:
+  synapse:
+    image: docker.io/matrixdotorg/synapse:latest
+    restart: unless-stopped
+    environment:
+      SYNAPSE_SERVER_NAME: "matrix.${SERVICE_ZONE}"
+      SYNAPSE_REPORT_STATS: no
+      SYNAPSE_CONFIG_DIR: /config
+      SYNAPSE_DATA_DIR: /data
+    volumes:
+      - "${SERVICE_DATA}/synapse:/data"
+      - "${SERVICE_ENV_CONF}/synapse:/config"
+      - "${SERVICE_LOG}/synapse.log:/homeserver.log"
+    ports:
+      - "${SERVICE_PORT_MATRIX}:8008"
+    networks:
+      - default
+      - db
+  element:
+    image: vectorim/element-web:latest
+    restart: unless-stopped
+    volumes:
+      - "${SERVICE_ENV_CONF}/element/:/app"
+    ports:
+      - "${SERVICE_PORT_HTTP}:80"
+
+networks:
+  default:
+    name: "${SERVICE_NETWORK}"
+    external: true
+  db:
+    name: "${SERVICE_ENV}_postgres"
+    external: true

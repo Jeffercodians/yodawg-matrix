@@ -1,0 +1,26 @@
+server_name: "${MATRIX_SERVER_NAME}"
+pid_file: DATADIR/homeserver.pid
+report_stats: False
+listeners:
+  - port: 8008
+    tls: false
+    type: http
+    x_forwarded: true
+    bind_addresses: ['0.0.0.0']
+    resources:
+      - names: [client, federation]
+        compress: false
+database:
+  name: psycopg2
+  txn_limit: 10000
+  args:
+    user: synapse
+    password: "${SERVICE_PASSWORD_DB}"
+    dbname: synapse
+    host: db
+    port: 5432
+    cp_min: 5
+    cp_max: 10
+log_config: "/config/SERVERNAME.log.config"
+media_store_path: /data/media_store
+signing_key_path: "/config/SERVERNAME.signing.key"
